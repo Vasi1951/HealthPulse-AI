@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HealthPulse AI — Test Suite</title>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+         background:#0F172A;color:#E2E8F0;padding:2rem;line-height:1.6}
+    h1{font-size:1.75rem;font-weight:700;margin-bottom:0.25rem;
+       background:linear-gradient(135deg,#0EA5E9,#10B981);
+       -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .subtitle{color:#94A3B8;margin-bottom:2rem;font-size:0.875rem}
+    .summary{display:flex;gap:1rem;margin-bottom:2rem;flex-wrap:wrap}
+    .summary__card{padding:1rem 1.5rem;border-radius:12px;background:#1E293B;
+                   border:1px solid #334155;flex:1;min-width:120px;text-align:center}
+    .summary__card h3{font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;
+                      color:#94A3B8;margin-bottom:0.25rem}
+    .summary__card .value{font-size:2rem;font-weight:700}
+    .summary__card .value--pass{color:#10B981}
+    .summary__card .value--fail{color:#EF4444}
+    .summary__card .value--total{color:#0EA5E9}
+    table{width:100%;border-collapse:collapse;background:#1E293B;border-radius:12px;overflow:hidden;
+          border:1px solid #334155;margin-bottom:2rem}
+    thead{background:#0F172A}
+    th{padding:0.875rem 1rem;text-align:left;font-size:0.75rem;text-transform:uppercase;
+       letter-spacing:0.05em;color:#94A3B8;border-bottom:1px solid #334155}
+    td{padding:0.875rem 1rem;border-bottom:1px solid #1E293B;font-size:0.875rem}
+    tr:last-child td{border-bottom:none}
+    tr:hover{background:rgba(14,165,233,0.05)}
+    .status{display:inline-flex;align-items:center;gap:0.375rem;padding:0.25rem 0.75rem;
+            border-radius:9999px;font-size:0.75rem;font-weight:600}
+    .status--pass{background:rgba(16,185,129,0.15);color:#10B981}
+    .status--fail{background:rgba(239,68,68,0.15);color:#EF4444}
+    .test-name{font-weight:500;color:#F1F5F9}
+    .test-detail{font-size:0.8125rem;color:#94A3B8}
+    .running{display:flex;align-items:center;gap:0.5rem;padding:1rem;color:#94A3B8;font-size:0.875rem}
+    .spinner{width:20px;height:20px;border:2px solid #334155;border-top:2px solid #0EA5E9;
+             border-radius:50%;animation:spin 0.8s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .footer{margin-top:2rem;padding-top:1rem;border-top:1px solid #334155;
+            font-size:0.75rem;color:#64748B;text-align:center}
+  </style>
+</head>
+<body>
+  <h1>🧪 HealthPulse AI Test Suite</h1>
+  <p class="subtitle">Automated functional tests — browser-based, no dependencies</p>
+
+  <div class="summary" id="summary">
+    <div class="summary__card">
+      <h3>Total</h3>
+      <div class="value value--total" id="total-count">-</div>
+    </div>
+    <div class="summary__card">
+      <h3>Passed</h3>
+      <div class="value value--pass" id="pass-count">-</div>
+    </div>
+    <div class="summary__card">
+      <h3>Failed</h3>
+      <div class="value value--fail" id="fail-count">-</div>
+    </div>
+  </div>
+
+  <div id="running" class="running">
+    <div class="spinner"></div>
+    Running tests…
+  </div>
+
+  <table id="results-table" style="display:none">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Test</th>
+        <th>Detail</th>
+        <th>Result</th>
+      </tr>
+    </thead>
+    <tbody id="results-body"></tbody>
+  </table>
+
+  <div class="footer">
+    HealthPulse AI &copy; 2025 — PromptWars x Flora Institute of Technology
+  </div>
+
+  <script type="module">
+    /**
+     * @fileoverview Self-contained browser test suite for HealthPulse AI.
+     * Tests input sanitization, rate limiting, markdown rendering,
+     * localStorage operations, disclaimer persistence, and API key validation.
+     */
+
+    // Import utility functions for testing
+    import {
+      stripHtmlTags,
+      sanitizeInput,
+      renderMarkdown,
+      createRateLimiter,
+      isValidApiKey,
+      detectEmergency,
+      escapeHtml,
+      getFromStorage,
+      saveToStorage,
+    } from '../js/utils.js';
+
+    /** @type {Array<{name: string, detail: string, passed: boolean}>} */
+    const results = [];
+
+    /**
+     * Adds a test result.
+     * @param {string} name - Test name.
+     * @param {string} detail - Detail description.
+     * @param {boolean} passed - Whether the test passed.
+     */
+    const addResult = (name, detail, passed) => {
+      results.push({ name, detail, passed });
+    };
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // TEST 1: Input Sanitization Removes Script Tags
+    // ═══════════════════════════════════════════════════════════════════════
+    (() => {
+      const testName = 'Input Sanitization — Script Tags';
+
+      try {
+        const malicious1 = '<script>alert("xss")</script>Hello';
+        const result1 = sanitizeInput(malicious1);
+        const hasNoScript1 = !result1.includes('<script') && !result1.includes('</script');
+
+        const malicious2 = '<img onerror="alert(1)" src=x>Test';
+        const result2 = sanitizeInput(malicious2);
+        const hasNoImg = !result2.includes('<img');
+
+        const malicious3 = '<div onmouseover="bad()">hover</div>';
+        const result3 = sanitizeInput(malicious3);
+        const hasNoDiv = !result3.includes('<div');
+
+        const allPassed = hasNoScript1 && hasNoImg && hasNoDiv;
+
+        addResult(testName, `Removed <script>, <img>, <div> tags. Output: "${result1}"`, allPassed);
+      } catch (error) {
+        addResult(testName, `Error: ${error.message}`, false);
+      }
+    })();
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // TEST 2: Input Sanitization Truncates Long Input
+    // ═══════════════════════════════════════════════════════════════════════
+    (() => {
+      const testName = 'Input Sanitization — Max Length';
+
+      try {
+        const longInput = 'A'.repeat(3000);
+        const result = sanitizeInput(longInput, 2000);
+        const passed = result.length === 2000;
+
+        addResult(testName, `Input: 3000 chars → Output: ${result.length} chars (limit: 2000)`, passed);
+      } catch (error) {
+        addResult(testName, `Error: ${error.message}`, false);
+      }
+    })();
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // TEST 3: Rate Limiter Blocks After 10 Messages
+    // ═══════════════════════════════════════════════════════════════════════
+    (() => {
+      const testName = 'Rate Limiter — Blocks After Limit';
+
+      try {
+        const limiter = createRateLimiter(10, 60000);
+        let allAllowed = true;
+
+        // Send 10 messages — all should be allowed
+        for (let i = 0; i < 10; i++) {
+          const check = limiter.check();
+          if (!check.allowed) {
+            allAllowed = false;
+            break;
+          }
+          limiter.record();
+        }
+
+        // 11th message should be blocked
+        const blocked = limiter.check();
+        const passed = allAllowed && !blocked.allowed && blocked.resetInMs > 0;
+
+        addResult(
+          testName,
+          `10 messages allowed: ${allAllowed}, 11th blocked: ${!blocked.allowed}, reset in: ${blocked.resetInMs}ms`,
+          passed
+        );
+      } catch (error) {
+        addResult(testName, `Error: ${error.message}`, false);
+      }
+    })();
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // TEST 4: Rate Limiter Reset Works
+    // ═══════════════════════════════════════════════════════════════════════
+    (() => {
+      const testName = 'Rate Limiter — Reset Clears Count';
+
+      try {
+        const limiter = createRateLimiter(5, 60000);
+        for (let i = 0; i < 5; i++) {
+          limiter.check();
+          limiter.record();
+        }
+        const blockedBefore = !limiter.check().allowed;
+        limiter.reset();
+        const allowedAfter = limiter.check().allowed;
+
+        const passed = blockedBefore && allowedAfter;
+        addResult(testName, `Blocked before reset: ${blockedBefore}, allowed after: ${allowedAfter}`, passed);
+      } catch (error) {
+        addResult(testName, `Error: ${error.message}`, false);
+      }
+    })();
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // TEST 5: Markdown Renderer — Bold
+    // ═══════════════════════════════════════════════════════════════════════
+    (() => {
+      const testName = 'Markdown Renderer — Bold';
+
+      try {
+        const result = renderMarkdown('This is **bold text** here');
+        const passed = result.includes('<strong>bold text</strong>');
+        addResult(testName, `Contains <strong>: ${passed}`, passed);
+      } catch (error) {
+        addResult(testName, `Error: ${error.message}`, false);
+      }
+    })();
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // TEST 6: Markdown Renderer — Italic
+    // ═══════════════════════════════════════════════════════════════════════
+    (() => {
+      const testName = 'Markdown Renderer — Italic';
+
+      try {
+        const result = renderMarkdown('This is *italic text* here');
+        const passed = result.includes('<em>italic text</em>');
+        addResult(testName, `Contains <em>: ${passed}`, passed);
+      } catch (error) {
+        addResult(testName, `Error: ${error.message}`, false);
+      }
+    })();
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // TEST 7: Markdown Renderer — Headers
+    // ═══════════════════════════════════════════════════════════════════════
+    (() => {
+      const testName = 'Markdown Renderer — Headers';
+
+      try {
+        const h1 = renderMarkdown('# Main Title');
+        const h2 = renderMarkdown('## Section Title');
+        const h3 = renderMarkdown('### Sub Section');
+
+        const hasH1 = h1.includes('<h1');
+        const hasH2 = h2.includes('<h2');
+        const hasH3 = h3.includes('<h3');
+
+        const passed = hasH1 && hasH2 && hasH3;
+        addResult(testName, `H1: ${hasH1}, H2: ${hasH2}, H3: ${hasH3}`, passed);
+      } catch (error) {
+        addResult(testName, `Error: ${error.message}`, false);
+      }
+    })();
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // TEST 8: Markdown Renderer — Lists
+    // ═══════════════════════════════════════════════════════════════════════
+    (() => {
+      const testName = 'Markdown Renderer — Unordered Lists';
+
+      try {
+        const input = '- Item one\n- Item two\n- Item three';
+        const result = renderMarkdown(input);
+        const hasUl = result.includes('<ul');
+        const hasLi = result.includes('<li>');
+        const liCount = (result.match(/<li>/g) || []).length;
+
+        const passed = hasUl && liCount === 3;
+        addResult(testName, `<ul>: ${hasUl}, <li> count: ${liCount}`, passed);
+      } catch (error) {
+        addResult(testName, `Error: ${error.message}`, false);
+      }
+    })();
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // TEST 9: Markdown Renderer — Code Blocks
+    // ═══════════════════════════════════════════════════════════════════════
+    (() => {
+      const testName = 'Markdown Renderer — Code Blocks';
+
+      try {
+        const input = '```js\nconst x = 1;\n```';
+        const result = renderMarkdown(input);
+        const hasPre = result.includes('<pre');
+        const hasCode = result.includes('<code>');
+
+        const passed = hasPre && hasCode;
+        addResult(testName, `<pre>: ${hasPre}, <code>: ${hasCode}`, passed);
+      } catch (error) {
+        addResult(testName, `Error: ${error.message}`, false);
+      }
+    })();
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // TEST 10: localStorage Save/Load Conversation
+    // ═══════════════════════════════════════════════════════════════════════
+    (() => {
+      const testName = 'localStorage — Save/Load Conversation';
+      const testKey = 'healthpulse_test_conversation';
+
+      try {
+        const testData = [
+          { role: 'user', content: 'Test question' },
+          { role: 'assistant', content: 'Test answer' },
+        ];
+
+        saveToStorage(testKey, testData);
+        const loaded = getFromStorage(testKey, []);
+
+        const passed =
+          Array.isArray(loaded) &&
+          loaded.length === 2 &&
+          loaded[0].role === 'user' &&
+          loaded[0].content === 'Test question' &&
+          loaded[1].role === 'assistant';
+
+        // Clean up
+        localStorage.removeItem(testKey);
+
+        addResult(testName, `Saved 2 messages, loaded ${loaded.length} messages correctly`, passed);
+      } catch (error) {
+        addResult(testName, `Error: ${error.message}`, false);
+      }
+    })();
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // TEST 11: Disclaimer Acknowledgment Persistence
+    // ═══════════════════════════════════════════════════════════════════════
+    (() => {
+      const testName = 'Disclaimer — Acknowledgment Persistence';
+      const disclaimerKey = 'healthpulse_test_disclaimer';
+
+      try {
+        // Initially should be false/null
+        const before = getFromStorage(disclaimerKey, false);
+
+        // Save acknowledgment
+        saveToStorage(disclaimerKey, true);
+        const after = getFromStorage(disclaimerKey, false);
+
+        // Clean up
+        localStorage.removeItem(disclaimerKey);
+
+        const passed = before === false && after === true;
+        addResult(testName, `Before: ${before}, After acknowledgment: ${after}`, passed);
+      } catch (error) {
+        addResult(testName, `Error: ${error.message}`, false);
+      }
+    })();
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // TEST 12: API Key Validation — Rejects Empty Strings
+    // ═══════════════════════════════════════════════════════════════════════
+    (() => {
+      const testName = 'API Key Validation — Rejects Invalid Keys';
+
+      try {
+        const emptyRejected = !isValidApiKey('');
+        const shortRejected = !isValidApiKey('sk-ant-short');
+        const wrongPrefixRejected = !isValidApiKey('pk-wrong-prefix-key-that-is-long-enough-here');
+        const validAccepted = isValidApiKey('sk-ant-api03-validkeyexample1234567890abcdef');
+
+        const passed = emptyRejected && shortRejected && wrongPrefixRejected && validAccepted;
+        addResult(
+          testName,
+          `Empty: ✗ ${emptyRejected}, Short: ✗ ${shortRejected}, Wrong prefix: ✗ ${wrongPrefixRejected}, Valid: ✓ ${validAccepted}`,
+          passed
+        );
+      } catch (error) {
+        addResult(testName, `Error: ${error.message}`, false);
+      }
+    })();
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // TEST 13: Emergency Detection
+    // ═══════════════════════════════════════════════════════════════════════
+    (() => {
+      const testName = 'Emergency Detection — Keyword Matching';
+
+      try {
+        const detected1 = detectEmergency('I have severe chest pain');
+        const detected2 = detectEmergency("I can't breathe properly");
+        const detected3 = detectEmergency('I think I might be having a stroke');
+        const detected4 = detectEmergency('I have severe bleeding that won\'t stop');
+        const notDetected = detectEmergency('I have a mild headache');
+
+        const passed = detected1 && detected2 && detected3 && detected4 && !notDetected;
+        addResult(
+          testName,
+          `Chest pain: ${detected1}, Can't breathe: ${detected2}, Stroke: ${detected3}, Bleeding: ${detected4}, Headache (safe): ${!notDetected}`,
+          passed
+        );
+      } catch (error) {
+        addResult(testName, `Error: ${error.message}`, false);
+      }
+    })();
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // TEST 14: HTML Escaping
+    // ═══════════════════════════════════════════════════════════════════════
+    (() => {
+      const testName = 'HTML Escaping — Special Characters';
+
+      try {
+        const result = escapeHtml('<script>alert("xss")</script>');
+        const hasNoAngleBrackets = !result.includes('<') && !result.includes('>');
+        const hasEntities = result.includes('&lt;') && result.includes('&gt;');
+
+        const passed = hasNoAngleBrackets && hasEntities;
+        addResult(testName, `No raw brackets: ${hasNoAngleBrackets}, Has entities: ${hasEntities}`, passed);
+      } catch (error) {
+        addResult(testName, `Error: ${error.message}`, false);
+      }
+    })();
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // TEST 15: Sanitize Input — Edge Cases
+    // ═══════════════════════════════════════════════════════════════════════
+    (() => {
+      const testName = 'Input Sanitization — Edge Cases';
+
+      try {
+        const null_result = sanitizeInput(null);
+        const undefined_result = sanitizeInput(undefined);
+        const number_result = sanitizeInput(123);
+        const empty_result = sanitizeInput('   ');
+
+        const passed =
+          null_result === '' && undefined_result === '' && number_result === '' && empty_result === '';
+
+        addResult(testName, `null→"", undefined→"", number→"", whitespace→""`, passed);
+      } catch (error) {
+        addResult(testName, `Error: ${error.message}`, false);
+      }
+    })();
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // RENDER RESULTS
+    // ═══════════════════════════════════════════════════════════════════════
+    const renderResults = () => {
+      const tbody = document.getElementById('results-body');
+      const table = document.getElementById('results-table');
+      const running = document.getElementById('running');
+
+      const passCount = results.filter((r) => r.passed).length;
+      const failCount = results.length - passCount;
+
+      document.getElementById('total-count').textContent = results.length;
+      document.getElementById('pass-count').textContent = passCount;
+      document.getElementById('fail-count').textContent = failCount;
+
+      tbody.innerHTML = results
+        .map(
+          (r, i) => `
+        <tr>
+          <td>${i + 1}</td>
+          <td class="test-name">${r.name}</td>
+          <td class="test-detail">${r.detail}</td>
+          <td>
+            <span class="status status--${r.passed ? 'pass' : 'fail'}">
+              ${r.passed ? '✓ PASS' : '✗ FAIL'}
+            </span>
+          </td>
+        </tr>
+      `
+        )
+        .join('');
+
+      running.style.display = 'none';
+      table.style.display = '';
+    };
+
+    // Small delay to show running state
+    setTimeout(renderResults, 500);
+  </script>
+</body>
+</html>

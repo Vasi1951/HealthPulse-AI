@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="HealthPulse AI — An intelligent health information assistant powered by Claude AI. Get evidence-based health information, symptom insights, and wellness guidance.">
+  <meta name="theme-color" content="#0EA5E9">
+
+  <!-- Content Security Policy -->
+  <meta http-equiv="Content-Security-Policy" 
+        content="default-src 'self'; 
+               script-src 'self'; 
+               style-src 'self' 'unsafe-inline'; 
+               connect-src 'self'; 
+               img-src 'self' data:; 
+               font-src 'self';">
+
+  <title>HealthPulse AI — Health Information Assistant</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <!-- Skip to main content (accessibility) -->
+  <a href="#chat-messages" class="skip-link" id="skip-to-main">Skip to main content</a>
+
+  <!-- Screen reader announcements (aria-live region) -->
+  <div id="sr-announcements" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+
+  <div class="app" role="application" aria-label="HealthPulse AI Health Information Assistant">
+
+    <!-- ═══ HEADER ═══ -->
+    <header class="header" role="banner">
+      <div class="header__left">
+        <!-- Mobile: left sidebar toggle -->
+        <button class="header__btn header__btn--mobile" id="toggle-left-sidebar" 
+                aria-label="Open topics and symptom checker menu" title="Topics & Symptoms">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>
+          </svg>
+        </button>
+
+        <div class="header__logo">
+          <div class="header__logo-icon" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+            </svg>
+          </div>
+          <div>
+            <h1 class="header__title">HealthPulse AI</h1>
+            <span class="header__subtitle">Health Information Assistant</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="header__right">
+        <!-- Accessibility controls -->
+        <button class="header__btn" id="font-decrease" aria-label="Decrease font size" title="Decrease font size">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/>
+            <line x1="5" y1="12" x2="10" y2="12" stroke-width="3"/>
+          </svg>
+        </button>
+        <button class="header__btn" id="font-increase" aria-label="Increase font size" title="Increase font size">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/>
+            <line x1="14" y1="12" x2="20" y2="12" stroke-width="3"/>
+            <line x1="17" y1="9" x2="17" y2="15" stroke-width="3"/>
+          </svg>
+        </button>
+        <button class="header__btn" id="toggle-contrast" aria-label="Toggle high contrast mode" title="High contrast">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 010 20" fill="currentColor"/>
+          </svg>
+        </button>
+
+        <!-- Mobile: right sidebar toggle -->
+        <button class="header__btn header__btn--mobile" id="toggle-right-sidebar" 
+                aria-label="Open conversation history" title="History">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- ═══ DISCLAIMER BANNER ═══ -->
+    <div class="disclaimer-banner" role="status" aria-label="Health information disclaimer">
+      <span class="disclaimer-banner__icon" aria-hidden="true">⚕️</span>
+      HealthPulse AI provides general health information only. It is <strong>NOT</strong> a substitute for professional medical advice, diagnosis, or treatment.
+    </div>
+
+    <!-- ═══ MAIN CONTENT ═══ -->
+    <main class="main" role="main">
+
+      <!-- ─── Left Sidebar: Topics & Symptoms ─── -->
+      <aside class="sidebar sidebar--left" id="left-sidebar" role="complementary" aria-label="Health topics and symptom checker">
+        <div class="sidebar__tabs" role="tablist">
+          <button class="sidebar__tab sidebar__tab--active" id="topics-tab" role="tab" 
+                  aria-selected="true" aria-controls="topics-panel">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+              <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+            </svg>
+            Topics
+          </button>
+          <button class="sidebar__tab" id="symptom-tab" role="tab" 
+                  aria-selected="false" aria-controls="symptoms-panel">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+            </svg>
+            Symptoms
+          </button>
+        </div>
+
+        <!-- Topics Panel -->
+        <div class="sidebar__content" id="topics-panel" role="tabpanel" aria-labelledby="topics-tab">
+          <div id="topics-list"></div>
+        </div>
+
+        <!-- Symptoms Panel (lazy loaded) -->
+        <div class="sidebar__content" id="symptoms-panel" role="tabpanel" aria-labelledby="symptom-tab" hidden>
+        </div>
+      </aside>
+
+      <!-- ─── Chat Area ─── -->
+      <section class="chat" aria-label="Chat conversation area">
+        <div class="chat__messages" id="chat-messages" role="log" aria-label="Conversation messages" 
+             aria-live="polite" tabindex="-1">
+          <!-- Messages are dynamically inserted here -->
+        </div>
+
+        <div class="chat__input-area">
+          <form class="chat__form" id="chat-form" aria-label="Send a message">
+            <div class="chat__input-wrapper">
+              <textarea 
+                class="chat__input" 
+                id="chat-input" 
+                placeholder="Ask me a health question…" 
+                rows="1" 
+                aria-label="Type your health question" 
+                maxlength="2000"
+              ></textarea>
+            </div>
+            <button type="submit" class="chat__send-btn" id="send-btn" aria-label="Send message" title="Send">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+              </svg>
+            </button>
+          </form>
+        </div>
+      </section>
+
+      <!-- ─── Right Sidebar: History ─── -->
+      <aside class="sidebar sidebar--right" id="right-sidebar" role="complementary" aria-label="Conversation history">
+        <div class="sidebar__header">
+          <h2 class="sidebar__title">History</h2>
+        </div>
+        <div class="sidebar__content">
+          <div id="history-list"></div>
+        </div>
+        <div class="sidebar__footer">
+          <button class="sidebar__action-btn" id="new-chat-btn" aria-label="Start a new conversation">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            New Chat
+          </button>
+          <button class="sidebar__action-btn" id="export-chat-btn" aria-label="Export conversation as text file">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Export Chat
+          </button>
+          <button class="sidebar__action-btn sidebar__action-btn--danger" id="clear-chat-btn" 
+                  aria-label="Clear current conversation">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+            </svg>
+            Clear Chat
+          </button>
+        </div>
+      </aside>
+
+      <!-- Mobile sidebar overlay -->
+      <div class="sidebar-overlay" id="sidebar-overlay" aria-hidden="true"></div>
+    </main>
+  </div>
+
+  <!-- ═══ DISCLAIMER MODAL ═══ -->
+  <div class="modal" id="disclaimer-modal" role="dialog" aria-modal="true" aria-hidden="true"
+       aria-labelledby="disclaimer-modal-title">
+    <div class="modal__card">
+      <div class="modal__icon modal__icon--warning" aria-hidden="true">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+      </div>
+      <h2 class="modal__title" id="disclaimer-modal-title">Health Information Disclaimer</h2>
+      <p class="modal__text">
+        <strong>HealthPulse AI</strong> provides general health information only. It is 
+        <strong>NOT</strong> a substitute for professional medical advice, diagnosis, or treatment.
+      </p>
+      <p class="modal__text">
+        Always seek the advice of your physician or other qualified health provider with any 
+        questions you may have regarding a medical condition. Never disregard professional 
+        medical advice or delay in seeking it because of information provided by this application.
+      </p>
+      <p class="modal__text">
+        <strong>If you are experiencing a medical emergency, call 911 (US) or your local 
+        emergency number immediately.</strong>
+      </p>
+      <button class="modal__btn modal__btn--warning" id="disclaimer-accept-btn">
+        I Understand — Continue
+      </button>
+    </div>
+  </div>
+
+  <!-- ═══ APP SCRIPT ═══ -->
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
